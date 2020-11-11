@@ -7,7 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(tidyverse)
 
 
 ```
@@ -40,3 +41,76 @@ sum(rgamma(100000,
 
 Thus, the probability that $\lambda > 1$ is .01. This result is comparable to the first HW.
 
+**2. The Wernstrom distribution is a continuous distribution over the positive real numbers with probability density function:**
+
+$$  f_W(x) = \frac{5}{2}sin(x)^2e^{-x} $$
+**for all $x>0$.**
+
+**(a) Find a constant, $c$, such that $ce^{-x} \geq f_W(x)$ for all $x>0$.**
+
+Because $sin(x)^2$ is bound by 0 and 1, $c = \frac{5}{2}$.
+
+**(b) Use this information to draw at least 10,000 samples from the Wernstrom distribution using rejection sampling.**
+
+**i. Plot a kernel density estimate of the distribution of your samples or a histogram of your samples.**
+
+**ii. Add the p.d.f. of the Wernstrom distribution to this plot, which should closely match the distribution of your samples.**
+
+
+```{r, echo = TRUE}
+
+### Set seed 
+set.seed(1212)
+
+X = rexp(100000, 1)
+U = rexp(100000, 1)
+
+### Wernstrom Distribution
+pi_x <- function(x) {
+  new_x = (5/2) * (sin(x)^2) * exp(-x)
+  return(new_x)
+}
+
+count = 1
+accept = c()
+
+
+while(count <= 100000 & length(accept) < 10000){
+  test_u = U[count]
+  test_x = pi_x(X[count])/(2.5*dexp(X[count],1))
+  if (test_u <= test_x){
+    accept = rbind(accept, X[count])
+    count = count + 1
+  }
+  count = count + 1
+}
+
+### Code adapted from https://rpubs.com/mathetal/rejectsampling
+
+df = data.frame(accept = accept)
+
+f = function(x) (5/2) * (sin(x)^2) * exp(-x)
+
+df %>%
+  ggplot(aes(x = accept)) +
+  geom_histogram(aes(y = ..density..), color = "black", fill = "white") + 
+  stat_function(fun = f, color = "red", size = 1.2) +
+  theme_bw() +
+  ylab("Density") +
+  xlab("x") +
+  ggtitle("Histogram: Wernstrom Density using Rejection Sampling (Red = Wernstrom Density)")
+  
+```
+
+As we see in the histogram above, our rejection sampling is successful in approximating the Wernstrom distribution (shown as the red line).
+
+**(c) Use these samples to estimate the mean and variance of the Wernstrom distribution.**
+
+```{r, echo = TRUE}
+
+mean(df$accept)
+var(df$accept)
+
+```
+
+We estimate the mean of the Wernstrom distribution to be 1.37 with a variance of .76.
